@@ -272,6 +272,15 @@ shallow_props
 ggsave("Rudd_filtereddata_shallow75.png", plot = shallow_props, width = 15, height = 8, dpi = 300)
 
 
+##################
+#aggregations occuring on the east end group receivers during the fall. 
+#lets plot individual receivers to see if we can get a better idea of where the Rudd are actually aggregating 
+
+
+
+
+
+
 ###########depth
 library(suncalc)
 

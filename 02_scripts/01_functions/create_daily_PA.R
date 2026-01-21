@@ -12,68 +12,21 @@ library(lubridate)
 library(ggplot2)
 library(rgdal)
 ###### load up QAQC detection dataset #########
-detections<-readRDS( "./01_data/03_large_files_LFS/02_processed_files/HH_detections_good_2015-2022_Jan2023.rds")
+detections<-readRDS( "./01_data/03_large_files_LFS/02_processed_files/rudd_detections_CLEAN.rds")
+unique(detections$utc_release_date_time)
 #see scripts "Process GLATOS detection data" (in 02_scripts/01_functions) for min lag/false detection filtering 
 #see "dataclipping_abacus" script as wel 
 
 #### select date range of study #####
-####for HH habitat analyses - only including data until spring 2022 
-detections<- detections %>% filter(detection_timestamp_EST<"2022-05-01 00:00:00")
+#start = 2021-10-21
 ####for HH habitat analyses - only including data after spring 2016
-detections<- detections %>% filter(detection_timestamp_EST>"2016-04-30 00:00:00")
-
+detections1<- detections %>% filter(detection_timestamp_EST>"2021-10-20 00:00:00")
 
 ### filter to only HH detections
-detections<-detections %>% filter(glatos_array=="HAM")
-
-
-####Tag summary for HH fish for telemetry habitat modelling paper ######
-sorting<-detections %>% group_by(common_name_e, animal_id, transmitter_id) %>% 
-  summarize( num_days=n_distinct(date))
-
-
-
-########################################################
-detections<-left_join(detections,fish.info, by = c("transmitter_id"))
-
-#### get info for supplementary table of fish measures etc.
-#more.fish.info<- detections %>% group_by(common_name_e, transmitter_id, TAG_CODE_SPACE,Min.Delay, Max.Delay, Standard..mm.,Fork..mm.,Total..mm., Mass..g.,Sex,GLATOS_RELEASE_DATE_TIME,Family,Release.Location) %>% dplyr::summarise(first=min(detection_timestamp_EST), last=max(detection_timestamp_EST), days_detect=n_distinct(date))
-
-#write.csv(more.fish.info, "./Results/General/HH_fish_tagging_info.csv")
-#sum(unique(detections$transmitter_id))
-#######################################################
-##### Abacus plot of duration of fish detections for each Hamilton Harbour tagged fish
+detections1HH<-detections1 %>% filter(glatos_array=="HAM")
 
 ### can group sites in a certain order in future. 
-detections$transmitter_id<-as.factor(as.numeric(detections$transmitter_id))
-
-##subset to have a point per week - else R crashes... #
-det_fishstudy<- detections%>% filter(common_name_e %in% c("Common Carp","Goldfish","Freshwater Drum","Largemouth Bass", "Northern Pike", "Walleye"))
-
-det_fishstudy<-det_fishstudy %>% group_by(common_name_e, transmitter_id, week = cut(detection_timestamp_EST, "week") ) %>% summarize(n_det=n_distinct(detection_timestamp_EST))
-det_fishstudy$week<-as.POSIXct(det_fishstudy$week)
-
-fish_plot<-detections %>% group_by(common_name_e,transmitter_id) %>% summarize(min=min(detection_timestamp_EST), max=max(detection_timestamp_EST))
-
-### plot just study fish 
-fish_plot_few<-fish_plot %>% filter(common_name_e %in% c("Common Carp","Goldfish","Freshwater Drum","Largemouth Bass", "Northern Pike", "Walleye"))
-
-p1<-ggplot(data=fish_plot_few, aes(y=reorder(transmitter_id, desc(transmitter_id))))+
-  
-  ##reviewer wanted points for detections not line - so changed here ##
-  geom_point(data=det_fishstudy, aes(x=week,y=reorder(transmitter_id, desc(transmitter_id))), size=1)+
-  
-  geom_point(aes(x=min), col="chartreuse3",size=3)+
-  geom_point(aes(x=max), col="firebrick1", size = 2)+
-  
-  #geom_segment(aes(x = min,yend=transmitter_id,xend = max),size=1)+
-  labs(x="Date",y="Tag ID")+
-  theme_bw()+
-  theme(text = element_text(size=16))+facet_wrap(~common_name_e, scales="free_y")
-p1  
-
-##this is the good one ##
-ggsave(plot=p1, "./Results/General/HH_6StudyFish_Detection_Duration_sp2016-sp2022_week_May2024.png",  width = 35, height = 45,units = "cm", dpi = 400)
+detections1HH$transmitter_id<-as.factor(as.numeric(detections1HH$transmitter_id))
 
 ################################################################################
 ### remove extra detections off multiple receivers on a single ping. Keep first ping only. See if changes dataset compared to not doing this. 
@@ -88,10 +41,6 @@ ggsave(plot=p1, "./Results/General/HH_6StudyFish_Detection_Duration_sp2016-sp202
 #keeps the first detection from the ping tho
 ind<-unique(detections$animal_id)
 singleping<-data.frame()
-unique(detections$Min.Delay)
-
-###for Carp that had some tags without tag spec info
-detections$Min.Delay<- ifelse(detections$common_name_e == paste0("Common Carp"),130,detections$Min.Delay)
 unique(detections$Min.Delay)
 
 #loop to go through all individuals
