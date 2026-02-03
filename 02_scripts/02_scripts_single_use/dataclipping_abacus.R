@@ -106,7 +106,11 @@ for(i in 1:length(tags)){
 #fish id 505; died at rec HAM-032 (fishway)
 #fish id 506; died in cpm two week post tag
 #fish id 511; died in cpm <1 month remove 
-#fish id 512: died at rec HAM-032 (fishway)
+
+#***********
+#fish id 512: died at rec HAM-032 (fishway)***************
+#didnt die at fishway alive from tagging utnil december 2025
+
 #fish id 513; died at rec HAM-031 (fishway) <1month
 #fish id 1372; died at rec HAM-032 (fishway)
 #fish id 1378; died at rec HAM-032 (fishway) <1month 
@@ -596,10 +600,61 @@ ggplot(fish_timeline, aes(y = transmitter_id)) +
 
 
 
+###what fish were detected at the canal HAM-022??
 
 
 
+Canalrec22 <- `Rudddetections_filtered1B_2017-2025` %>%
+ filter(station_no  == 22)
 
 
+unique(Canalrec22$transmitter_id)
+#all unique fish that were detected at the canal rec
+
+#1386 1368  506  508  499 9164 9157 9149 9150 9159 9160
+
+#get a summary like we did for the RBG data that summrizes the dates
+#coud then further investigate the fish and do a double check 
+
+canalrec_summary <- Canalrec22 %>%
+ group_by(detection_timestamp_EST, transmitter_id)
 
 
+library(dplyr)
+
+# Make sure detection_date is in Date format
+df$detection_date <- as.Date(df$detection_date)
+
+# Create summary
+summary_df <- df %>%
+ group_by(fish_id) %>%
+ summarise(
+  detection_periods = {
+   dates <- sort(unique(detection_date))
+   ranges <- c()
+   start_date <- dates[1]
+   end_date <- dates[1]
+   
+   if(length(dates) > 1) {
+    for(i in 2:length(dates)) {
+     if(as.numeric(dates[i] - end_date) <= 1) {
+      end_date <- dates[i]
+     } else {
+      ranges <- c(ranges, ifelse(start_date == end_date, 
+                                 as.character(start_date), 
+                                 paste(start_date, "to", end_date)))
+      start_date <- dates[i]
+      end_date <- dates[i]
+     }
+    }
+   }
+   
+   ranges <- c(ranges, ifelse(start_date == end_date, 
+                              as.character(start_date), 
+                              paste(start_date, "to", end_date)))
+   paste(ranges, collapse = ", ")
+  },
+  .groups = 'drop'
+ )
+
+print(summary_df)

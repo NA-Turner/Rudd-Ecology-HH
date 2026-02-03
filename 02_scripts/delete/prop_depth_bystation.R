@@ -74,7 +74,6 @@ final_locations_depth <- full_dates_depth %>%
 
 final_locations_depth
 #merge these two dataframes 
-
 # Merging avg_depth into final_locations
 final_locations_withavgdepth <- final_locations %>%
  left_join(final_locations_depth %>% select(animal_id, date, avg_depth), by = c("animal_id", "date"))
