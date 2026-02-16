@@ -1,4 +1,6 @@
 ##load in the filtered detection dataframe
+data_filtered <- readRDS("~/01_data/03_large_files_LFS/01_raw_files/Rudddetections_filtered1B_2017-2025.rds")
+
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -6,11 +8,9 @@ library(beepr)
 library(lubridate)
 library(ggpubr)
 library(scales)
+library(readxl)
 
-tags<-unique(data_filtered$transmitter_id)
-
-unique(ruddalldets$utc_release_date_time)
-ruddalldets$SensorType<-as.character(ruddalldets$SensorType)
+data_filtered$SensorType<-as.character(data_filtered$SensorType)
 
 ruddalldets <- data_filtered %>%
   mutate(SensorType = case_when(
@@ -97,7 +97,7 @@ for(i in 1:length(tags)){
 #
 
 #########
-#####All fish to be removed from the dataframe before moving forward with any data vis or analysis
+#####Fish removed
 ########
 
 #fish id 500; died at rec HAM-096 CPM within first month
@@ -106,17 +106,12 @@ for(i in 1:length(tags)){
 #fish id 505; died at rec HAM-032 (fishway)
 #fish id 506; died in cpm two week post tag
 #fish id 511; died in cpm <1 month remove 
-
-#***********
-#fish id 512: died at rec HAM-032 (fishway)***************
-#didnt die at fishway alive from tagging utnil december 2025
-
 #fish id 513; died at rec HAM-031 (fishway) <1month
 #fish id 1372; died at rec HAM-032 (fishway)
 #fish id 1378; died at rec HAM-032 (fishway) <1month 
 #fish id 1380; died at rec HAM-032 (fishway) <1month
 #fish id 1392; died at HAM-032 (fishway)
-#fish id 9153; not sure when died, depth plot all over the place
+#fish id 9153; died post tagging around HAM-009 (east end)
 #fish id 15865; died at HAM-023 (tagged with a V13)
 #fish id 25081; died at HAM-012
 
@@ -190,8 +185,9 @@ for(i in 1:length(tags)){
 #removed 4/10 from tagging done in 2023
 #removed 2/16 from tagging done in 2020/2021
 #removed 1/1 from 2017 
+
+#if you need to check in on an indiviudal fish plot using plotly wrapper
 library(plotly)
-unique(ruddalldets$transmitter_id)
 
 rudd9151<-filter(detectionsrudd_removals11, transmitter_id=="9151")
 
@@ -233,21 +229,18 @@ ggplotly(p2)
 p1_plotly <- ggplotly(p1)
 p2_plotly <- ggplotly(p2)
 
-# Arrange them in a single row
-hmmm_plotly <- subplot(p1_plotly, p2_plotly, nrows = 1, margin = 0.05)
-hmmm_plotly
 
-#margin = theme(plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm"))
-hmmm<-ggarrange(p1,p2,nrow=1)
-hmmm
+##############################################################
+#############filtering the detections dataframe ##############
+##############################################################
 ##first pull out the ids you want to remove completely from the dataframe
 
 id_to_remove<- c("500", "503", "504", "505",
-              "506","511", "512","513", "1372","1378", "1380","1392"
+              "506","511","513", "1372","1378", "1380","1392"
               ,"9153", "15865", "25081")
 
 # Use filter to remove these individuals
-detectionsrudd_removals1 <- ruddalldets %>%
+detectionsrudd_removals1 <- data_filtered %>%
   filter(!transmitter_id %in% id_to_remove)
 
 unique(detectionsrudd_removals1$transmitter_id)
@@ -264,7 +257,6 @@ detectionsrudd_removals1$detection_timestamp_EST <- as.POSIXct(detectionsrudd_re
 #2024 fish 
 detectionsrudd_removals1<-detectionsrudd_removals1[!(detectionsrudd_removals1$transmitter_id==497 & detectionsrudd_removals1$detection_timestamp_EST > "2024-07-12 00:00:00"),] 
 detectionsrudd_removals1<-detectionsrudd_removals1[!(detectionsrudd_removals1$transmitter_id==510 & detectionsrudd_removals1$detection_timestamp_EST > "2024-08-20 00:00:00"),] 
-detectionsrudd_removals1<-detectionsrudd_removals1[!(detectionsrudd_removals1$transmitter_id==519 & detectionsrudd_removals1$detection_timestamp_EST > "2024-06-02 00:00:00"),] 
 #2023 fish 
 detectionsrudd_removals1<-detectionsrudd_removals1[!(detectionsrudd_removals1$transmitter_id==1366 & detectionsrudd_removals1$detection_timestamp_EST > "2023-12-25 00:00:00"),] 
 detectionsrudd_removals1<-detectionsrudd_removals1[!(detectionsrudd_removals1$transmitter_id==1370 & detectionsrudd_removals1$detection_timestamp_EST > "2023-06-20 00:00:00"),] 
@@ -289,7 +281,6 @@ summary_clipped <- detectionsrudd_removals1 %>%
   .groups = "drop"
  )
 
-unique(detectionsrudd_removals1$transmitter_id)
 #remove first 48 hours from tag online date 
 
 detectionsrudd_removals_48hrs <- detectionsrudd_removals1 %>%
@@ -309,8 +300,12 @@ check <- detectionsrudd_removals_48hrs %>%
 
 
 
-saveRDS(detectionsrudd_removals_48hrs, "./01_data/03_large_files_LFS/rudd_detections_CLEAN.rds")
-########################rerun abacus plots post removal and clipping to make sure it all looks right 
+saveRDS(detectionsrudd_removals_48hrs, "./01_data/03_large_files_LFS/rudd_detections_QAQC.rds")
+detectionsrudd_removals_48hrs <- readRDS("~/01_data/03_large_files_LFS/02_processed_files/rudd_detections_QAQC.rds")
+
+########################
+##########rerun abacus plots post removal and clipping to make sure it all looks right 
+##########################
 tags<-unique(detectionsrudd_removals_48hrs$transmitter_id)
 
 detectionsrudd_removals_48hrs$SensorType<-as.factor(detectionsrudd_removals_48hrs$SensorType)
@@ -403,13 +398,16 @@ for(i in 1:length(tags)){
 
 #Rudd_tagworkbook LOAD
 #load in cleaned detections file 
-#rudd_detections_CLEAN
+#rudd_detections_QAQC
 
-rudd_detections_CLEAN$transmitter_id<-as.numeric(rudd_detections_CLEAN$transmitter_id)
+Rudd_tagworkbook <- read_excel("01_data/02_processed_files/Rudd_tagworkbook.xlsx")
+
+detectionsrudd_removals_48hrs$transmitter_id<-as.numeric(detectionsrudd_removals_48hrs$transmitter_id)
 Rudd_tagworkbook$transmitter_id<-as.numeric(Rudd_tagworkbook$transmitter_id)
 
 
-dets_tagdeets <- left_join(rudd_detections_CLEAN, Rudd_tagworkbook, by = "transmitter_id")
+dets_tagdeets <- left_join(detectionsrudd_removals_48hrs, Rudd_tagworkbook, by = "transmitter_id")
+
 
 # Get first and last detection for each fish
 fish_timeline <- dets_tagdeets %>%
@@ -417,10 +415,11 @@ fish_timeline <- dets_tagdeets %>%
   summarise(
     first_detection = min(detection_timestamp_EST),
     last_detection = max(detection_timestamp_EST),
+    Battery_length = first(`Date tag dies`),
     species = first(common_name_e)
   )
 
-colnames(dets_tagdeets1)
+
 ############
 summary_df <- dets_tagdeets %>%
   # convert timestamps to POSIXct (adjust parser if your format is different)
@@ -438,6 +437,7 @@ summary_df <- dets_tagdeets %>%
     release_date    = min(GLATOS_RELEASE_DATE_TIME, na.rm = TRUE),
     first_detection = min(detection_timestamp_EST,   na.rm = TRUE),
     last_detection  = max(detection_timestamp_EST,   na.rm = TRUE),
+    date_tag_dies = (`Date tag dies`),
     days_at_large   = as.numeric(difftime(last_detection, first_detection, units = "days")),
     tag_type        = first(tag_model),
     .groups = "drop"
@@ -458,16 +458,15 @@ active_fish_per_day <- fish_timeline %>%
  rowwise() %>%
  mutate(date_seq = list(seq(first_detection, last_detection, by = "day"))) %>%
  unnest(date_seq) %>%
-group_by(date_only = as.Date(date_seq)) %>%
+ group_by(date_only = as.Date(date_seq)) %>%
  summarise(n_active_fish = n_distinct(animal_id), .groups = 'drop')
 
 # Identify periods with 5+ fish
 periods_5plus <- active_fish_per_day %>%
  filter(n_active_fish >= 5)
 
-fish_timeline$animal_id<-as.factor(fish_timeline$animal_id)
-str(periods_5plus$date_only)
 
+fish_timeline$animal_id<-as.factor(fish_timeline$animal_id)
 
 # Create timeline plot with highlighted periods
 five<-ggplot(fish_timeline, aes(y = animal_id)) +
@@ -482,6 +481,7 @@ five<-ggplot(fish_timeline, aes(y = animal_id)) +
               size = 2, color = "black") +
  geom_point(aes(x = first_detection), color = "darkgreen", size = 3) +
  geom_point(aes(x = last_detection), color = "darkred", size = 3) +
+ geom_point(aes(x = Battery_length), color = "gray29", size = 1, shape=4 ) +
  labs(title = "Fish Detection Timelines (Yellow = 5+ Active Fish)",
       x = "Date",
       y = "Transmitter ID") +
@@ -497,6 +497,7 @@ ggsave("5activetags.png", plot = five, width = 12, height = 8, dpi = 300)
 periods_4plus <- active_fish_per_day %>%
  filter(n_active_fish >= 4)
 
+#some of the tag end dates (battery) wrong
 # Create timeline plot with highlighted periods
 four<-ggplot(fish_timeline, aes(y = animal_id)) +
  # Add shaded rectangles for 5+ fish periods
@@ -505,11 +506,12 @@ four<-ggplot(fish_timeline, aes(y = animal_id)) +
                ymin = -Inf, ymax = Inf),
            fill = "orange3", alpha=0.3, inherit.aes = FALSE) +
  # Fish timelines
- geom_segment(aes(x = first_detection, xend = last_detection, 
+ geom_segment(aes(x = first_detection, xend = Battery_length, 
                   yend = animal_id), 
               size = 2, color = "black") +
  geom_point(aes(x = first_detection), color = "darkgreen", size = 3) +
- geom_point(aes(x = last_detection), color = "darkred", size = 3) +
+ geom_point(aes(x = last_detection), color = "magenta", size = 3) +
+ geom_point(aes(x = Battery_length), color = "darkred", size = 3) +
  labs(title = "Fish Detection Timelines (Orange = 4+ Active Fish)",
       x = "Date",
       y = "Transmitter ID") +
@@ -604,11 +606,15 @@ ggplot(fish_timeline, aes(y = transmitter_id)) +
 
 
 
-Canalrec22 <- `Rudddetections_filtered1B_2017-2025` %>%
+Canalrec22 <- detectionsrudd_removals_48hrs %>%
  filter(station_no  == 22)
 
 
+
+
 unique(Canalrec22$transmitter_id)
+
+
 #all unique fish that were detected at the canal rec
 
 #1386 1368  506  508  499 9164 9157 9149 9150 9159 9160
@@ -619,42 +625,59 @@ unique(Canalrec22$transmitter_id)
 canalrec_summary <- Canalrec22 %>%
  group_by(detection_timestamp_EST, transmitter_id)
 
-
-library(dplyr)
-
-# Make sure detection_date is in Date format
-df$detection_date <- as.Date(df$detection_date)
+canalrec_summary$animal_id
 
 # Create summary
-summary_df <- df %>%
- group_by(fish_id) %>%
+summary_df <- canalrec_summary %>%
+ group_by(animal_id) %>%
  summarise(
   detection_periods = {
-   dates <- sort(unique(detection_date))
-   ranges <- c()
-   start_date <- dates[1]
-   end_date <- dates[1]
+   dates <- sort(unique(as.Date(detection_timestamp_EST)))
    
-   if(length(dates) > 1) {
+   if(length(dates) == 0) {
+    NA_character_
+   } else if(length(dates) == 1) {
+    format(dates[1], "%d-%m-%Y")
+   } else {
+    ranges <- c()
+    start_date <- dates[1]
+    end_date <- dates[1]
+    
     for(i in 2:length(dates)) {
-     if(as.numeric(dates[i] - end_date) <= 1) {
+     # Check if next date is consecutive (1 day apart)
+     if(as.numeric(dates[i] - end_date) == 1) {
       end_date <- dates[i]
      } else {
-      ranges <- c(ranges, ifelse(start_date == end_date, 
-                                 as.character(start_date), 
-                                 paste(start_date, "to", end_date)))
+      # Save the range or single date
+      if(start_date == end_date) {
+       ranges <- c(ranges, format(start_date, "%d-%m-%Y"))
+      } else {
+       ranges <- c(ranges, paste(format(start_date, "%d-%m-%Y"), "to", 
+                                 format(end_date, "%d-%m-%Y")))
+      }
+      # Start new range
       start_date <- dates[i]
       end_date <- dates[i]
      }
     }
+    
+    # Add the final range or single date
+    if(start_date == end_date) {
+     ranges <- c(ranges, format(start_date, "%d-%m-%Y"))
+    } else {
+     ranges <- c(ranges, paste(format(start_date, "%d-%m-%Y"), "to", 
+                               format(end_date, "%d-%m-%Y")))
+    }
+    
+    paste(ranges, collapse = ", ")
    }
-   
-   ranges <- c(ranges, ifelse(start_date == end_date, 
-                              as.character(start_date), 
-                              paste(start_date, "to", end_date)))
-   paste(ranges, collapse = ", ")
   },
   .groups = 'drop'
  )
 
 print(summary_df)
+
+
+
+rudd9159<-filter(dets_rudd, animal_id=="Rudd_9159")
+

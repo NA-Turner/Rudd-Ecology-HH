@@ -4,7 +4,6 @@
 ## Purpose of script: 
 ##    Load general-purpose scripts used throughout project
 ##    Rarely used/problematic packages may be loaded in specific scripts 
-##    custom telemetrytoolsFESL needs to be installed with devtools
 ##
 ## Author:  
 ##
@@ -21,14 +20,6 @@ library('tidyverse') #Basic organizing and plotting
 library('ggmap') #google basemaps
 library('sf') #handle shapefiles, projections, and distance calculations
 library('patchwork') #Add plots together
-
-###Packages off CRAN
-#----------------------------#
-###Lab package
-#Only need to install during updates
-devtools::install_github("FishEcologyScience/FESLtelemetry")
-library('FESLtelemetry')
-#library('telemetrytoolsFESL')
 
 
 ###GLATOS package
